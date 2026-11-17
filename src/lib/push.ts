@@ -16,19 +16,20 @@ Notifications.setNotificationHandler({
   }),
 });
 
-/** Tweedle sends to the channels info, warn and error. */
+/**
+ * Tweedle sends to the channels info, warn and error. Without `sound` Android
+ * plays the system sound; `sound` only names custom sound files.
+ */
 export async function setupChannels(t: TFunc): Promise<void> {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync('error', {
     name: t('level_error'),
     importance: Notifications.AndroidImportance.MAX,
-    sound: 'default',
     vibrationPattern: [0, 400, 200, 400],
   });
   await Notifications.setNotificationChannelAsync('warn', {
     name: t('level_warn'),
     importance: Notifications.AndroidImportance.HIGH,
-    sound: 'default',
   });
   await Notifications.setNotificationChannelAsync('info', {
     name: t('level_info'),
