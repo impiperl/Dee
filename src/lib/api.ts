@@ -76,8 +76,9 @@ export const api = {
     if (opts.minLevel && opts.minLevel !== 'all') q.set('minLevel', opts.minLevel);
     return request<{ events: TweedleEvent[]; unseen: number }>(ep, `/api/events?${q}`);
   },
-  seen: (ep: Endpoint, upTo: number) =>
-    request<{ unseen: number }>(ep, '/api/events/seen', { method: 'POST', body: JSON.stringify({ upTo }) }),
+  /** Marks the events the app has shown as seen (per device on the server). */
+  seen: (ep: Endpoint, ids: number[]) =>
+    request<{ unseen: number }>(ep, '/api/events/seen', { method: 'POST', body: JSON.stringify({ ids }) }),
   device: (ep: Endpoint) => request<Device>(ep, '/api/device'),
   updateDevice: (
     ep: Endpoint,

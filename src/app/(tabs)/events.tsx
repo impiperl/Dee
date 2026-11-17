@@ -21,6 +21,18 @@ function passes(e: TweedleEvent, f: Filter) {
   return f === 'all' || rank[e.level] >= rank[f];
 }
 
+/**
+ * Puts a freshly loaded newest page in front of the list. If the page does
+ * not reach the list (more than a page was missed), it starts over from it.
+ */
+function mergeNewest(page: TweedleEvent[], list: TweedleEvent[] | null): { list: TweedleEvent[]; reset: boolean } {
+  if (!list || list.length === 0) return { list: page, reset: true };
+  const known = new Set(list.map((e) => e.id));
+  const newer = page.filter((e) => !known.has(e.id));
+  if (newer.length === page.length && page.length >= PAGE) return { list: page, reset: true };
+  return { list: [...newer, ...list], reset: false };
+}
+
 export default function Events() {
   const { t } = useI18n();
   const { active } = useServers();
@@ -51,7 +63,7 @@ export default function Events() {
 function EventList({ server, filter }: { server: Server; filter: Filter }) {
   const { t, lang } = useI18n();
   const theme = useTheme();
-  const { onEvent, setUnseen } = useLive();
+  const { onEvent, setUnseen, sync } = useLive();
   const [events, setEvents] = useState<TweedleEvent[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -77,6 +89,24 @@ function EventList({ server, filter }: { server: Server; filter: Filter }) {
     load();
   }, [load]);
 
+  // After a reconnect or a status poll, fetch what may have been missed.
+  const lastSync = useRef(sync);
+  useEffect(() => {
+    if (sync === lastSync.current) return;
+    lastSync.current = sync;
+    api.events(ep, { limit: PAGE, minLevel: filter }).then(
+      (r) => {
+        setEvents((list) => {
+          const m = mergeNewest(r.events, list);
+          if (m.reset) setEnd(r.events.length < PAGE);
+          return m.list;
+        });
+        setUnseen(r.unseen);
+      },
+      () => {}, // the next sync tries again
+    );
+  }, [sync, ep, filter, setUnseen]);
+
   // New events arrive over the live connection.
   useEffect(
     () =>
@@ -90,10 +120,11 @@ function EventList({ server, filter }: { server: Server; filter: Filter }) {
   // Whatever was shown while the screen is open counts as seen.
   const focused = useIsFocused();
   useEffect(() => {
-    const newest = events?.[0];
-    if (!focused || !newest || !events.some((e) => !e.seen)) return;
+    // Only what is listed here counts, not events hidden by the filter or not loaded yet.
+    const ids = (events ?? []).filter((e) => !e.seen).map((e) => e.id).slice(0, 500);
+    if (!focused || ids.length === 0) return;
     const timer = setTimeout(() => {
-      api.seen(ep, newest.id).then(
+      api.seen(ep, ids).then(
         (r) => setUnseen(r.unseen),
         () => {}, // try again next time
       );

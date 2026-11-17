@@ -22,6 +22,12 @@ interface LiveValue {
   updatedAt: Date | null;
   refresh: () => Promise<void>;
   onEvent: (l: EventListener) => () => void;
+  /**
+   * Counts the moments the app (re)gained contact with the server: status
+   * loaded or WebSocket opened. Events may have been missed before; the
+   * event list reloads its newest page when this changes.
+   */
+  sync: number;
   /** Worst reported level per server id; 'offline' if it does not answer. */
   levels: Record<string, Level | 'offline'>;
 }
@@ -38,9 +44,10 @@ interface LiveState {
   conn: Conn;
   error: string | null;
   updatedAt: Date | null;
+  sync: number;
 }
 
-const initial: LiveState = { snapshot: null, unseen: 0, conn: 'connecting', error: null, updatedAt: null };
+const initial: LiveState = { snapshot: null, unseen: 0, conn: 'connecting', error: null, updatedAt: null, sync: 0 };
 
 export function LiveProvider({ children }: { children: React.ReactNode }) {
   const { active, servers } = useServers();
@@ -78,11 +85,12 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         const r = await api.status(ep);
         if (stopped) return false;
         const open = ws?.readyState === WebSocket.OPEN;
-        set(() => ({
+        set((s) => ({
           snapshot: r.status,
           unseen: r.unseen,
           updatedAt: new Date(),
           error: null,
+          sync: s.sync + 1,
           ...(open ? {} : { conn: 'polling' as Conn }),
         }));
         return true;
@@ -119,7 +127,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       ws = sock;
       sock.onopen = () => {
         retry = 0;
-        set(() => ({ conn: 'live' }));
+        set((s) => ({ conn: 'live', sync: s.sync + 1 }));
       };
       sock.onmessage = (m) => {
         let msg: any;
@@ -216,12 +224,12 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
 
   const setUnseen = useCallback((n: number) => updateFor(id, () => ({ unseen: n })), [updateFor, id]);
 
-  const { snapshot, unseen, conn, error, updatedAt } = cur;
+  const { snapshot, unseen, conn, error, updatedAt, sync } = cur;
   const value = useMemo<LiveValue>(() => {
     const levels = { ...others };
     if (id) levels[id] = conn === 'offline' || conn === 'unauthorized' ? 'offline' : snapshotLevel(snapshot);
-    return { snapshot, unseen, setUnseen, conn, error, updatedAt, refresh, onEvent, levels };
-  }, [snapshot, unseen, setUnseen, conn, error, updatedAt, refresh, onEvent, others, id]);
+    return { snapshot, unseen, setUnseen, conn, error, updatedAt, refresh, onEvent, levels, sync };
+  }, [snapshot, unseen, setUnseen, conn, error, updatedAt, refresh, onEvent, others, id, sync]);
 
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;
 }
