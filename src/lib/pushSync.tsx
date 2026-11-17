@@ -29,14 +29,23 @@ export function PushProvider({ children }: { children: React.ReactNode }) {
   // Bumped to send again what failed: after a pause and when the app comes back.
   const [attempt, setAttempt] = useState(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // Bumped to fetch the token again: it failed, it changed, or push may have been allowed meanwhile.
+  const [tokenTry, setTokenTry] = useState(0);
+  const tokenTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const hasToken = useRef(false);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') setAttempt((n) => n + 1);
+      if (state !== 'active') return;
+      setAttempt((n) => n + 1);
+      if (!hasToken.current) setTokenTry((n) => n + 1);
     });
+    const tokenSub = Notifications.addPushTokenListener(() => setTokenTry((n) => n + 1));
     return () => {
       sub.remove();
+      tokenSub.remove();
       clearTimeout(retryTimer.current);
+      clearTimeout(tokenTimer.current);
     };
   }, []);
 
@@ -46,17 +55,20 @@ export function PushProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    const load = () =>
-      getPushToken().then((r) => {
-        if (!cancelled) setPush(r);
-      });
-    load();
-    const sub = Notifications.addPushTokenListener(() => load());
+    // Only the first fetch asks for permission; later ones just look.
+    getPushToken(tokenTry === 0).then((r) => {
+      if (cancelled) return;
+      hasToken.current = !!r.token;
+      setPush({ state: r.state, token: r.token });
+      if (r.failed) {
+        clearTimeout(tokenTimer.current);
+        tokenTimer.current = setTimeout(() => setTokenTry((n) => n + 1), RETRY_MS);
+      }
+    });
     return () => {
       cancelled = true;
-      sub.remove();
     };
-  }, []);
+  }, [tokenTry]);
 
   useEffect(() => {
     if (!loaded || push.state === 'pending') return;

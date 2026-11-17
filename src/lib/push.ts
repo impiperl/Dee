@@ -42,11 +42,14 @@ function projectId(): string | undefined {
   return Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
 }
 
-/** Asks for permission (once) and returns the Expo push token. */
-export async function getPushToken(): Promise<{ state: PushState; token?: string }> {
+/**
+ * Returns the Expo push token; with ask it asks for permission if it may.
+ * failed: fetching the token went wrong (e.g. no network), worth trying again.
+ */
+export async function getPushToken(ask: boolean): Promise<{ state: PushState; token?: string; failed?: boolean }> {
   if (!Device.isDevice || !projectId()) return { state: 'unavailable' };
   let perm = await Notifications.getPermissionsAsync();
-  if (perm.status !== 'granted' && perm.canAskAgain) {
+  if (ask && perm.status !== 'granted' && perm.canAskAgain) {
     perm = await Notifications.requestPermissionsAsync();
   }
   if (perm.status !== 'granted') return { state: 'denied' };
@@ -54,6 +57,6 @@ export async function getPushToken(): Promise<{ state: PushState; token?: string
     const { data } = await Notifications.getExpoPushTokenAsync({ projectId: projectId() });
     return { state: 'ok', token: data };
   } catch {
-    return { state: 'unavailable' };
+    return { state: 'unavailable', failed: true };
   }
 }
