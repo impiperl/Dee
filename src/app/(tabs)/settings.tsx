@@ -27,6 +27,9 @@ export default function Settings() {
         <Button mode="contained-tonal" icon="qrcode-scan" onPress={() => router.push('/pair')}>
           {t('add_server')}
         </Button>
+        <Button mode="text" icon="help-circle-outline" onPress={() => router.push('/help')}>
+          {t('help_link')}
+        </Button>
         {push.state === 'denied' ? <HelperText type="info">{t('push_denied')}</HelperText> : null}
         {push.state === 'unavailable' ? <HelperText type="info">{t('push_unavailable')}</HelperText> : null}
       </Section>

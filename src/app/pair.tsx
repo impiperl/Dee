@@ -156,6 +156,9 @@ export default function Pair() {
         <Text variant="bodySmall" style={styles.hint}>
           {t('pair_hint')}
         </Text>
+        <Button mode="text" icon="help-circle-outline" onPress={() => router.push('/help')}>
+          {t('help_link')}
+        </Button>
       </ScrollView>
     </KeyboardAvoidingView>
   );

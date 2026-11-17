@@ -22,6 +22,7 @@ function Screens() {
       }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="pair" options={{ title: t('pair_title'), presentation: 'modal' }} />
+      <Stack.Screen name="help" options={{ title: t('help_title') }} />
     </Stack>
   );
 }

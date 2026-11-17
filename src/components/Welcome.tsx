@@ -15,6 +15,9 @@ export function Welcome() {
       <Button mode="contained" icon="qrcode-scan" onPress={() => router.push('/pair')}>
         {t('add_server')}
       </Button>
+      <Button mode="text" icon="help-circle-outline" onPress={() => router.push('/help')}>
+        {t('help_link')}
+      </Button>
     </View>
   );
 }

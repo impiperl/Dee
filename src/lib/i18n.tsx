@@ -15,6 +15,8 @@ const de = {
   welcome_title: 'Noch kein Server',
   welcome_text: 'Auf dem Server „sudo tweedle pair“ ausführen und den QR-Code scannen.',
   add_server: 'Server hinzufügen',
+  help_title: 'Zum Server',
+  help_link: 'Wie komme ich zum Server?',
 
   pair_title: 'Server koppeln',
   pair_scan: 'QR-Code',
@@ -95,6 +97,8 @@ const en: Record<Key, string> = {
   welcome_title: 'No server yet',
   welcome_text: 'Run “sudo tweedle pair” on the server and scan the QR code.',
   add_server: 'Add server',
+  help_title: 'Reaching a server',
+  help_link: 'How do I reach a server?',
 
   pair_title: 'Pair server',
   pair_scan: 'QR code',
