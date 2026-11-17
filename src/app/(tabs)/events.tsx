@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, SegmentedButtons, Text, useTheme } from 'react-native-paper';
@@ -88,26 +88,26 @@ function EventList({ server, filter }: { server: Server; filter: Filter }) {
   );
 
   // Whatever was shown while the screen is open counts as seen.
-  const markSeen = useCallback(async () => {
+  const focused = useIsFocused();
+  useEffect(() => {
     const newest = events?.[0];
-    if (!newest || !events.some((e) => !e.seen)) return;
-    try {
-      const r = await api.seen(ep, newest.id);
-      setUnseen(r.unseen);
-    } catch {
-      // try again next time
-    }
-  }, [events, ep, setUnseen]);
+    if (!focused || !newest || !events.some((e) => !e.seen)) return;
+    const timer = setTimeout(() => {
+      api.seen(ep, newest.id).then(
+        (r) => setUnseen(r.unseen),
+        () => {}, // try again next time
+      );
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [focused, events, ep, setUnseen]);
 
+  // Remove the "new" marks only after leaving, so they stay visible while reading.
   useFocusEffect(
-    useCallback(() => {
-      const timer = setTimeout(markSeen, 1500);
-      return () => {
-        clearTimeout(timer);
-        // Remove the "new" marks only after leaving, so they stay visible while reading.
-        setEvents((list) => list?.map((e) => (e.seen ? e : { ...e, seen: true })) ?? null);
-      };
-    }, [markSeen]),
+    useCallback(
+      () => () =>
+        setEvents((list) => (list?.some((e) => !e.seen) ? list.map((e) => (e.seen ? e : { ...e, seen: true })) : list)),
+      [],
+    ),
   );
 
   const loadMore = async () => {
