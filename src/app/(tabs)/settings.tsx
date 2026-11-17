@@ -1,12 +1,13 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, HelperText, SegmentedButtons, Text } from 'react-native-paper';
 
 import { LevelDot } from '@/components/LevelDot';
 import { Section } from '@/components/Section';
 import { api } from '@/lib/api';
+import { PRIVACY_URL } from '@/lib/legal';
 import { useI18n, type LangSetting } from '@/lib/i18n';
 import { useLive } from '@/lib/live';
 import { usePush } from '@/lib/pushSync';
@@ -47,6 +48,9 @@ export default function Settings() {
         />
       </Section>
 
+      <Button mode="text" icon="shield-account-outline" onPress={() => Linking.openURL(PRIVACY_URL)}>
+        {t('privacy')}
+      </Button>
       <Text variant="bodySmall" style={styles.version}>
         {t('version', { version: Constants.expoConfig?.version ?? '' })}
       </Text>

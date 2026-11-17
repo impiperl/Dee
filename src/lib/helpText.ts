@@ -20,49 +20,58 @@ export interface HelpText {
   note: string;
 }
 
-const health = [
-  { label: 'Prod  https://gaistnet.com/mon/health', url: 'https://gaistnet.com/mon/health' },
-  { label: 'Dev  http://192.168.0.115/mon/health', url: 'http://192.168.0.115/mon/health' },
-];
+const repo = { label: 'github.com/impiperl/Tweedle', url: 'https://github.com/impiperl/Tweedle' };
 
 const de: HelpText = {
   title: 'So kommst du zum Server',
   intro:
     'Dee spricht nicht direkt mit dem Server, sondern mit Tweedle, einem kleinen Programm, das dort als Dienst läuft. ' +
-    'Die App erreicht Tweedle über nginx unter /mon/ – auf Prod per HTTPS, auf Dev nur im Heimnetz.',
+    'Tweedle läuft auf Linux mit systemd.',
   steps: [
     {
       title: '1. Tweedle auf dem Server installieren',
       text:
-        'Einmal pro Server, im Tweedle-Repo. Das Skript baut Tweedle, richtet den Dienst ein und trägt /mon/ in nginx ein. ' +
-        'Beim ersten Lauf legt es nur die Config an: dann „setup“ ausführen (auswählen, was überwacht wird) und das Skript noch einmal starten.',
+        'Programm holen (braucht Go 1.22 oder neuer), bauen und einrichten. Der Installer fragt nach dem Namen des Servers, wie die App ihn erreicht ' +
+        '(über einen Webserver, der dort schon läuft, direkt per HTTPS oder ohne Verschlüsselung im Heimnetz) ' +
+        'und welche Prozesse und Container überwacht werden sollen. Enter übernimmt jeweils den Vorschlag.',
+      links: [repo],
       commands: [
-        'git pull',
-        'sudo deploy/install.sh prod      # bzw. dev',
-        'sudo /usr/local/bin/tweedle setup',
-        'sudo deploy/install.sh prod',
+        'git clone https://github.com/impiperl/Tweedle && cd Tweedle',
+        'CGO_ENABLED=0 go build -o tweedle ./cmd/tweedle',
+        'sudo ./tweedle install',
       ],
+      after:
+        'Läuft ein Webserver, zeigt der Installer am Ende die Zeilen für nginx, Apache oder Caddy, die du dort einträgst. ' +
+        'Später ändern: einfach noch einmal „sudo tweedle install“.',
     },
     {
-      title: '2. Prüfen, ob /mon/ erreichbar ist',
-      text: 'Im Browser auf dem Handy öffnen. Es muss eine Antwort mit "ok":true kommen.',
-      links: health,
-      after: 'Dev geht nur, wenn das Handy im Heimnetz (WLAN) ist.',
+      title: '2. Prüfen, ob der Server erreichbar ist',
+      text: 'Die Adresse, die der Installer am Ende anzeigt, mit /health dahinter im Browser auf dem Handy öffnen, zum Beispiel:',
+      commands: ['https://example.com/tweedle/health'],
+      after: 'Es muss eine Antwort mit "ok":true kommen.',
     },
     {
       title: '3. Koppeln',
       text: 'Auf dem Server einen Code erzeugen. Er gilt 10 Minuten und nur einmal.',
-      commands: ['sudo /usr/local/bin/tweedle pair'],
+      commands: ['sudo tweedle pair'],
       after:
-        'Dann in Dee „Server hinzufügen“ tippen und den QR-Code scannen. Ohne Kamera: „Code eingeben“, Adresse wählen (Prod/Dev) und den Code abtippen.',
+        'Dann in Dee „Server hinzufügen“ tippen und den QR-Code scannen. Ohne Kamera: „Code eingeben“, die Adresse und den Code abtippen.',
       pairButton: true,
+    },
+    {
+      title: '4. Zwei Server überwachen sich gegenseitig',
+      text:
+        'Tweedle auf beiden Servern installieren und bei der Frage nach anderen Servern jeweils die Adresse des anderen eingeben. ' +
+        'Fällt einer aus, meldet ihn der andere. Dee mit beiden Servern koppeln.',
     },
   ],
   troubleTitle: 'Wenn es nicht klappt',
   trouble: [
     {
       problem: '„Nicht erreichbar“',
-      fix: 'Die Adresse aus Schritt 2 im Browser testen. Kommt dort nichts, läuft Tweedle nicht oder nginx leitet /mon/ nicht weiter:',
+      fix:
+        'Die Adresse aus Schritt 2 im Browser testen. Kommt dort nichts, läuft Tweedle nicht, der Webserver leitet nicht weiter ' +
+        'oder die Firewall sperrt den Port. Auf dem Server:',
       commands: ['sudo systemctl status tweedle', 'sudo journalctl -u tweedle -n 30'],
     },
     {
@@ -72,55 +81,66 @@ const de: HelpText = {
     {
       problem: '„Nicht mehr gekoppelt“',
       fix: 'Das Gerät wurde auf dem Server entfernt. In Dee neu koppeln. Gekoppelte Geräte zeigen und entfernen:',
-      commands: ['sudo /usr/local/bin/tweedle devices', 'sudo /usr/local/bin/tweedle devices rm ID'],
+      commands: ['sudo tweedle devices', 'sudo tweedle devices rm ID'],
     },
     {
       problem: 'Keine Push-Nachrichten',
       fix: 'Push für Dee in den Systemeinstellungen erlauben und unter Einstellungen die Stufe prüfen. Testnachricht an alle Geräte:',
-      commands: ['sudo /usr/local/bin/tweedle testpush'],
+      commands: ['sudo tweedle testpush'],
     },
   ],
-  note: 'sudo findet auf RHEL /usr/local/bin nicht, deshalb der volle Pfad.',
+  note: 'Findet sudo „tweedle“ nicht (z. B. auf RHEL), den vollen Pfad nehmen: sudo /usr/local/bin/tweedle …',
 };
 
 const en: HelpText = {
   title: 'How to reach a server',
   intro:
     'Dee does not talk to the server directly but to Tweedle, a small program running there as a service. ' +
-    'The app reaches Tweedle through nginx under /mon/ – on Prod over HTTPS, on Dev only from the home network.',
+    'Tweedle runs on Linux with systemd.',
   steps: [
     {
       title: '1. Install Tweedle on the server',
       text:
-        'Once per server, in the Tweedle repo. The script builds Tweedle, sets up the service and adds /mon/ to nginx. ' +
-        'The first run only creates the config: then run “setup” (choose what to watch) and start the script again.',
+        'Get the program (needs Go 1.22 or newer), build and set it up. The installer asks for the name of the server, how the app reaches it ' +
+        '(through a web server already running there, directly over HTTPS, or without encryption on a home network) ' +
+        'and which processes and containers to watch. Enter takes the suggestion.',
+      links: [repo],
       commands: [
-        'git pull',
-        'sudo deploy/install.sh prod      # or dev',
-        'sudo /usr/local/bin/tweedle setup',
-        'sudo deploy/install.sh prod',
+        'git clone https://github.com/impiperl/Tweedle && cd Tweedle',
+        'CGO_ENABLED=0 go build -o tweedle ./cmd/tweedle',
+        'sudo ./tweedle install',
       ],
+      after:
+        'With a web server, the installer finally shows the lines to add for nginx, Apache or Caddy. ' +
+        'To change settings later, just run “sudo tweedle install” again.',
     },
     {
-      title: '2. Check that /mon/ is reachable',
-      text: 'Open it in the browser on the phone. The answer must contain "ok":true.',
-      links: health,
-      after: 'Dev only works while the phone is on the home network (Wi-Fi).',
+      title: '2. Check that the server is reachable',
+      text: 'Open the address the installer shows at the end, with /health added, in the browser on the phone, for example:',
+      commands: ['https://example.com/tweedle/health'],
+      after: 'The answer must contain "ok":true.',
     },
     {
       title: '3. Pair',
       text: 'Create a code on the server. It is valid for 10 minutes and only once.',
-      commands: ['sudo /usr/local/bin/tweedle pair'],
-      after:
-        'Then tap “Add server” in Dee and scan the QR code. Without a camera: “Enter code”, choose the address (Prod/Dev) and type the code.',
+      commands: ['sudo tweedle pair'],
+      after: 'Then tap “Add server” in Dee and scan the QR code. Without a camera: “Enter code”, type the address and the code.',
       pairButton: true,
+    },
+    {
+      title: '4. Two servers watching each other',
+      text:
+        'Install Tweedle on both servers and, when asked for other servers, enter the address of the other one. ' +
+        'If one fails, the other reports it. Pair Dee with both servers.',
     },
   ],
   troubleTitle: 'If it does not work',
   trouble: [
     {
       problem: '“Unreachable”',
-      fix: 'Test the address from step 2 in the browser. If nothing comes back, Tweedle is not running or nginx does not forward /mon/:',
+      fix:
+        'Test the address from step 2 in the browser. If nothing comes back, Tweedle is not running, the web server does not ' +
+        'forward, or the firewall blocks the port. On the server:',
       commands: ['sudo systemctl status tweedle', 'sudo journalctl -u tweedle -n 30'],
     },
     {
@@ -130,15 +150,15 @@ const en: HelpText = {
     {
       problem: '“No longer paired”',
       fix: 'The device was removed on the server. Pair again in Dee. List and remove paired devices:',
-      commands: ['sudo /usr/local/bin/tweedle devices', 'sudo /usr/local/bin/tweedle devices rm ID'],
+      commands: ['sudo tweedle devices', 'sudo tweedle devices rm ID'],
     },
     {
       problem: 'No push notifications',
       fix: 'Allow push for Dee in the system settings and check the level under Settings. Test message to all devices:',
-      commands: ['sudo /usr/local/bin/tweedle testpush'],
+      commands: ['sudo tweedle testpush'],
     },
   ],
-  note: 'sudo on RHEL does not search /usr/local/bin, hence the full path.',
+  note: 'If sudo cannot find “tweedle” (e.g. on RHEL), use the full path: sudo /usr/local/bin/tweedle …',
 };
 
 export const helpText: Record<Lang, HelpText> = { de, en };

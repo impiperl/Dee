@@ -7,7 +7,7 @@ import type { MinLevel } from './types';
 export interface Server {
   id: string;
   name: string; // name reported by Tweedle
-  url: string; // public URL, e.g. https://gaistnet.com/mon
+  url: string; // public URL, e.g. https://example.com/tweedle
   token: string;
   minLevel: MinLevel;
 }

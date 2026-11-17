@@ -39,3 +39,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Firebase config: not in the public repo; EAS uploads it (see .easignore)
+google-services.json

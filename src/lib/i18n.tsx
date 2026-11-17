@@ -80,6 +80,7 @@ const de = {
   lang_system: 'System',
   saved_failed: 'Speichern fehlgeschlagen: {error}',
   version: 'Dee {version}',
+  privacy: 'Datenschutz',
 };
 
 type Key = keyof typeof de;
@@ -162,6 +163,7 @@ const en: Record<Key, string> = {
   lang_system: 'System',
   saved_failed: 'Saving failed: {error}',
   version: 'Dee {version}',
+  privacy: 'Privacy policy',
 };
 
 export const dictionaries = { de, en };

@@ -3,18 +3,12 @@ import * as Device from 'expo-device';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Chip, HelperText, SegmentedButtons, Text, TextInput } from 'react-native-paper';
+import { Button, HelperText, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 
 import { api, ApiError, normalizeUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { usePush } from '@/lib/pushSync';
 import { useServers } from '@/lib/servers';
-
-// Known servers, to save typing when entering a code by hand.
-const PRESETS = [
-  { label: 'Prod', url: 'https://gaistnet.com/mon' },
-  { label: 'Dev', url: 'http://192.168.0.115/mon' },
-];
 
 /** Content of the QR code printed by "tweedle pair". */
 interface PairQR {
@@ -39,7 +33,7 @@ export default function Pair() {
   const { add } = useServers();
   const push = usePush();
   const [mode, setMode] = useState<'scan' | 'manual'>('scan');
-  const [url, setUrl] = useState(PRESETS[0].url);
+  const [url, setUrl] = useState('');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -116,13 +110,6 @@ export default function Pair() {
           )
         ) : (
           <View style={styles.form}>
-            <View style={styles.presets}>
-              {PRESETS.map((p) => (
-                <Chip key={p.label} selected={normalizeUrl(url) === p.url} onPress={() => setUrl(p.url)}>
-                  {p.label}
-                </Chip>
-              ))}
-            </View>
             <TextInput
               mode="outlined"
               label={t('pair_url')}
@@ -131,6 +118,7 @@ export default function Pair() {
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
+              placeholder="https://example.com/tweedle"
             />
             <TextInput
               mode="outlined"
@@ -170,7 +158,6 @@ const styles = StyleSheet.create({
   camera: { aspectRatio: 1, borderRadius: 12, overflow: 'hidden' },
   permission: { gap: 12, alignItems: 'center', paddingVertical: 32 },
   form: { gap: 12 },
-  presets: { flexDirection: 'row', gap: 8 },
   center: { textAlign: 'center' },
   hint: { opacity: 0.6, textAlign: 'center' },
 });

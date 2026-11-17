@@ -8,7 +8,7 @@ import type {
 } from './types';
 
 export interface Endpoint {
-  url: string; // e.g. https://gaistnet.com/mon (no trailing slash)
+  url: string; // e.g. https://example.com/tweedle (no trailing slash)
   token?: string;
 }
 
@@ -43,7 +43,7 @@ async function request<T>(ep: Endpoint, path: string, init: RequestInit = {}): P
     try {
       body = text ? JSON.parse(text) : null;
     } catch {
-      // not JSON (e.g. an nginx error page)
+      // not JSON (e.g. an error page of the web server)
     }
     if (!res.ok) throw new ApiError(res.status, body?.error ?? `HTTP ${res.status}`);
     if (body === null) throw new ApiError(res.status, 'invalid response');

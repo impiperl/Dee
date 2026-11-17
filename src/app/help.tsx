@@ -4,6 +4,7 @@ import { Button, Text, useTheme } from 'react-native-paper';
 
 import { Section } from '@/components/Section';
 import { helpText } from '@/lib/helpText';
+import { PRIVACY_URL } from '@/lib/legal';
 import { useI18n } from '@/lib/i18n';
 
 const mono = Platform.select({ ios: 'Menlo', default: 'monospace' });
@@ -34,7 +35,6 @@ export default function Help() {
       {h.steps.map((s) => (
         <Section key={s.title} title={s.title}>
           <Text variant="bodyMedium">{s.text}</Text>
-          {s.commands ? <Commands lines={s.commands} /> : null}
           {s.links?.map((l) => (
             <Text
               key={l.url}
@@ -44,6 +44,7 @@ export default function Help() {
               {l.label}
             </Text>
           ))}
+          {s.commands ? <Commands lines={s.commands} /> : null}
           {s.after ? <Text variant="bodyMedium">{s.after}</Text> : null}
           {s.pairButton ? (
             <Button mode="contained-tonal" icon="qrcode-scan" onPress={() => router.push('/pair')}>
@@ -66,6 +67,9 @@ export default function Help() {
       <Text variant="bodySmall" style={styles.note}>
         {h.note}
       </Text>
+      <Button mode="text" icon="shield-account-outline" onPress={() => Linking.openURL(PRIVACY_URL)}>
+        {t('privacy')}
+      </Button>
     </ScrollView>
   );
 }
